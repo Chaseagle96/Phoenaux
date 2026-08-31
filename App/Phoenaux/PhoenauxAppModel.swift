@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-enum PhoenauxPresetSelection: Hashable, Sendable {
+enum PhoenauxPresetSelection: Hashable {
     case builtIn(PhoenauxPreset)
     case user(String)
 
