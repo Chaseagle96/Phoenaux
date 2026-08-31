@@ -1,7 +1,7 @@
 #ifndef PHOENAUX_DSP_APPLE_H
 #define PHOENAUX_DSP_APPLE_H
 
-#include <PhoenauxDSP/PhoenauxDSP.h>
+#include "PhoenauxDSP.h"
 
 #if defined(__APPLE__)
 #include <AudioToolbox/AudioToolbox.h>
