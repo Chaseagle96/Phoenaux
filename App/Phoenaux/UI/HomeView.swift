@@ -206,22 +206,27 @@ struct HomeView: View {
                     .foregroundStyle(.secondary)
                 Picker(
                     "Preset",
-                    selection: Binding(
-                        get: { model.presetSelection },
-                        set: model.selectPreset
+                    selection: Binding<String>(
+                        get: { model.presetSelection.persistenceValue },
+                        set: { persistenceValue in
+                            guard let selection = PhoenauxPresetSelection(
+                                persistenceValue: persistenceValue
+                            ) else { return }
+                            model.selectPreset(selection)
+                        }
                     )
                 ) {
                     Section("Built-in") {
                         ForEach(PhoenauxPreset.allCases) { preset in
                             Text(preset.rawValue)
-                                .tag(PhoenauxPresetSelection.builtIn(preset))
+                                .tag(PhoenauxPresetSelection.builtIn(preset).persistenceValue)
                         }
                     }
                     if !model.userPresets.isEmpty {
                         Section("Saved") {
                             ForEach(model.userPresets) { preset in
                                 Text(preset.name)
-                                    .tag(PhoenauxPresetSelection.user(preset.identifier))
+                                    .tag(PhoenauxPresetSelection.user(preset.identifier).persistenceValue)
                             }
                         }
                     }
