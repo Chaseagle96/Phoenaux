@@ -1,0 +1,82 @@
+name: Phoenaux
+
+options:
+  bundleIdPrefix: com.chaseagle96
+  deploymentTarget:
+    iOS: "18.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    CLANG_CXX_LANGUAGE_STANDARD: c++20
+    CLANG_CXX_LIBRARY: libc++
+
+targets:
+  Phoenaux:
+    type: application
+    platform: iOS
+    sources:
+      - path: App/Phoenaux
+      - path: Sources/PhoenauxDSP/PhoenauxDSP.cpp
+      - path: Sources/PhoenauxDSP/Apple/PhoenauxDSPApple.cpp
+      - path: Sources/PhoenauxDSP/include
+        buildPhase: none
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.chaseagle96.Phoenaux
+        PRODUCT_NAME: Phoenaux
+        INFOPLIST_FILE: App/Phoenaux/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/Phoenaux/Resources/Phoenaux.entitlements
+        SWIFT_OBJC_BRIDGING_HEADER: App/Phoenaux/Support/Phoenaux-Bridging-Header.h
+        HEADER_SEARCH_PATHS:
+          - $(SRCROOT)/Sources/PhoenauxDSP/include
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MACCATALYST: NO
+    dependencies:
+      - sdk: AVFAudio.framework
+      - sdk: AudioToolbox.framework
+      - target: PhoenauxAUv3
+        embed: true
+    scheme:
+      testTargets:
+        - PhoenauxTests
+      gatherCoverageData: false
+
+  PhoenauxTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests/PhoenauxModelTests
+    dependencies:
+      - target: Phoenaux
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.chaseagle96.PhoenauxTests
+        GENERATE_INFOPLIST_FILE: YES
+
+  PhoenauxAUv3:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Extensions/PhoenauxAUv3
+      - path: Sources/PhoenauxDSP/PhoenauxDSP.cpp
+      - path: Sources/PhoenauxDSP/Apple/PhoenauxDSPApple.cpp
+      - path: Sources/PhoenauxDSP/include
+        buildPhase: none
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.chaseagle96.Phoenaux.AudioUnit
+        PRODUCT_NAME: PhoenauxAUv3
+        INFOPLIST_FILE: Extensions/PhoenauxAUv3/Info.plist
+        SWIFT_OBJC_BRIDGING_HEADER: App/Phoenaux/Support/Phoenaux-Bridging-Header.h
+        HEADER_SEARCH_PATHS:
+          - $(SRCROOT)/Sources/PhoenauxDSP/include
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+    dependencies:
+      - sdk: AVFAudio.framework
+      - sdk: AudioToolbox.framework

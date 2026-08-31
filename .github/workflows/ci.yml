@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  portable-dsp:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --config Release --parallel
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+
+  sanitizers:
+    runs-on: ubuntu-24.04
+    env:
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure ASan and UBSan
+        run: >-
+          cmake -S . -B build-sanitized
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build
+        run: cmake --build build-sanitized --parallel
+      - name: Test
+        run: ctest --test-dir build-sanitized --output-on-failure
+
+  swift-models-and-bridge:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Type-check C bridge
+        run: >-
+          swiftc -typecheck -warnings-as-errors
+          -Xcc -I -Xcc Sources/PhoenauxDSP/include
+          -import-objc-header App/Phoenaux/Support/Phoenaux-Bridging-Header.h
+          Tests/LinuxBridgeCheck/BridgeCheck.swift
+      - name: Compile model checks
+        run: >-
+          swiftc -strict-concurrency=complete -warnings-as-errors
+          App/Phoenaux/Models/DeviceProfile.swift
+          App/Phoenaux/Models/PhoenauxPreset.swift
+          App/Phoenaux/Models/PresetDocument.swift
+          App/Phoenaux/Models/CompiledDSPState.swift
+          App/Phoenaux/Models/PresetStore.swift
+          Tests/LinuxModelCheck/RouteStub.swift
+          Tests/LinuxModelCheck/ModelCheck.swift
+          -o "$RUNNER_TEMP/PhoenauxModelCheck"
+      - name: Run model checks
+        run: "$RUNNER_TEMP/PhoenauxModelCheck"
+
+  ios-project:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download XcodeGen 2.46.0
+        run: |
+          curl --fail --location --retry 3 \
+            https://github.com/yonaskolb/XcodeGen/releases/download/2.46.0/xcodegen.zip \
+            --output "$RUNNER_TEMP/xcodegen.zip"
+          ditto -x -k "$RUNNER_TEMP/xcodegen.zip" "$RUNNER_TEMP/xcodegen"
+          echo "$RUNNER_TEMP/xcodegen/bin" >> "$GITHUB_PATH"
+      - name: Generate Xcode project
+        run: xcodegen generate --spec project.yml
+      - name: Compile app and model tests
+        run: >-
+          xcodebuild build-for-testing
+          -project Phoenaux.xcodeproj
+          -scheme Phoenaux
+          -sdk iphonesimulator
+          -destination 'generic/platform=iOS Simulator'
+          CODE_SIGNING_ALLOWED=NO
