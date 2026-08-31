@@ -28,7 +28,7 @@ This repository is at the foundation stage. It currently contains:
 - macOS-runner packaging of an unsigned device-build IPA artifact for later Apple signing;
 - an evidence-backed routing analysis for current Apple platforms.
 
-The limiter has automated intersample-over protection coverage but is not yet certified against a complete ITU-R/EBU true-peak vector suite. The iOS host, SwiftUI source, local-file transport, and AUv3 target are present but have not been built locally on an Apple toolchain. CI is configured to compile the generated iOS project, embedded extension, bridge checks, and model tests, but that workflow has not yet been observed on GitHub. Measured device calibration, AUv3 host validation, and physical-hardware validation remain in progress.
+The limiter has automated intersample-over protection coverage but is not yet certified against a complete ITU-R/EBU true-peak vector suite. The iOS host, SwiftUI source, local-file transport, and AUv3 target are present but have not been built locally on an Apple toolchain. GitHub CI compiles the generated iOS project, embedded extension, bridge checks, and model tests, then packages an unsigned device-build IPA artifact. Measured device calibration, AUv3 host validation, and physical-hardware validation remain in progress.
 
 ## Build the portable DSP tests
 
