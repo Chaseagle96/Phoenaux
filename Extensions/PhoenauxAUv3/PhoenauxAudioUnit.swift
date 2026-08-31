@@ -208,8 +208,11 @@ final class PhoenauxAudioUnit: AUAudioUnit {
         _ crystalizer: AUValue,
         _ width: AUValue
     ) -> PresetDefinition {
-        .init(
-            preset: AUAudioUnitPreset(number: number, name: name),
+        let audioUnitPreset = AUAudioUnitPreset()
+        audioUnitPreset.number = number
+        audioUnitPreset.name = name
+        return .init(
+            preset: audioUnitPreset,
             values: [
                 .inputGainDB: inputGain,
                 .lowGainDB: low,
