@@ -18,6 +18,7 @@
 - [x] Add route/session handling, meters, and the first SwiftUI control surface.
 - [x] Add durable user-preset persistence and snapshot saving.
 - [x] Add validated preset import/export and user-preset selection UI.
+- [x] Add progressive-disclosure Advanced DSP bypass and key tuning controls.
 - [x] Add inheritable generic iPhone-speaker and provisional AirPods Pro 3 profiles with automatic route switching.
 - [ ] Tune generic iPhone-speaker and AirPods Pro 3 profiles on physical hardware.
 

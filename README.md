@@ -19,11 +19,13 @@ This repository is at the foundation stage. It currently contains:
 - latency-matched, crossfaded global bypass plus independent stage bypass;
 - versioned, inheritable device profiles with conservative iPhone-speaker and provisional AirPods Pro 3 tuning;
 - validated, shareable JSON preset documents with atomic persistence, import/export, and saved-preset selection;
+- progressive-disclosure Advanced DSP controls with live stage bypass and device-capped authored tuning;
 - nonlinear compilation of output profile, user preset, and Reborn intensity into immutable DSP state;
 - hosted generated-signal and local mono/stereo file playback through the shared DSP graph;
 - interruption-aware transport plus route/sample-rate and media-services reset recovery;
 - a headless AUv3 effect target with all seven stages, independent bypass controls, stable parameters, factory presets, and user-preset state support;
 - deterministic native behavior and objective response tests with cross-platform CI configuration;
+- macOS-runner packaging of an unsigned device-build IPA artifact for later Apple signing;
 - an evidence-backed routing analysis for current Apple platforms.
 
 The limiter has automated intersample-over protection coverage but is not yet certified against a complete ITU-R/EBU true-peak vector suite. The iOS host, SwiftUI source, local-file transport, and AUv3 target are present but have not been built locally on an Apple toolchain. CI is configured to compile the generated iOS project, embedded extension, bridge checks, and model tests, but that workflow has not yet been observed on GitHub. Measured device calibration, AUv3 host validation, and physical-hardware validation remain in progress.

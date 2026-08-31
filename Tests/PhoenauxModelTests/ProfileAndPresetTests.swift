@@ -59,6 +59,38 @@ final class ProfileAndPresetTests: XCTestCase {
         XCTAssertThrowsError(try preset.validated())
     }
 
+    func testAdvancedOverridesRemainValidatedAndDeviceCapped() throws {
+        let source = PhoenauxPreset.reborn.document
+        let edited = source.applyingAdvancedOverrides(
+            moduleEnabled: [.crystalizer: false],
+            parameters: [
+                .inputGainDB: -99,
+                .bassAmount: 0.9,
+                .stereoWidth: 99,
+                .limiterCeilingDB: 4,
+            ]
+        )
+        let validated = try edited.validated()
+        XCTAssertTrue(source.module(.crystalizer)?.enabled == true)
+        XCTAssertFalse(validated.module(.crystalizer)?.enabled ?? true)
+        XCTAssertEqual(validated.authoredValue(for: .inputGainDB), -24)
+        XCTAssertEqual(validated.authoredValue(for: .bassAmount), 0.9)
+        XCTAssertEqual(validated.authoredValue(for: .stereoWidth), 1.5)
+        XCTAssertEqual(validated.authoredValue(for: .limiterCeilingDB), 0)
+
+        let profile = try DeviceProfileCatalog.resolve(
+            identifier: DeviceProfileCatalog.iPhoneSpeakerIdentifier
+        )
+        let compiled = try DSPStateCompiler.compile(
+            preset: validated,
+            profile: profile,
+            intensity: 1
+        )
+        XCTAssertFalse(compiled.crystalizerEnabled)
+        XCTAssertLessThanOrEqual(compiled.stereoWidth, profile.maximumStereoWidth)
+        XCTAssertEqual(compiled.limiterCeilingDB, 0)
+    }
+
     func testPresetStoreWritesAndReloadsAtomicJSON() async throws {
         let root = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)

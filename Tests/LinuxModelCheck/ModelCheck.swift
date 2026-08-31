@@ -27,13 +27,28 @@ struct PhoenauxModelCheck {
         let decoded = try JSONDecoder().decode(PhoenauxPresetDocument.self, from: data).validated()
         try expect(decoded == source, "preset JSON must round-trip without losing known fields")
 
+        let advanced = try source.applyingAdvancedOverrides(
+            moduleEnabled: [.crystalizer: false],
+            parameters: [.inputGainDB: -99, .bassAmount: 0.9, .stereoWidth: 99]
+        ).validated()
+        try expect(advanced.module(.crystalizer)?.enabled == false,
+            "advanced bypass must enter the effective preset")
+        try expect(advanced.authoredValue(for: .inputGainDB) == -24,
+            "advanced input trim must remain in its safe range")
+        try expect(advanced.authoredValue(for: .stereoWidth) == 1.5,
+            "advanced width must clamp before serialization")
+
         let half = try DSPStateCompiler.compile(preset: source, profile: iPhone, intensity: 0.5)
         let full = try DSPStateCompiler.compile(preset: source, profile: iPhone, intensity: 1)
         let headphones = try DSPStateCompiler.compile(preset: source, profile: airPods, intensity: 1)
+        let advancedSpeaker = try DSPStateCompiler.compile(preset: advanced, profile: iPhone, intensity: 1)
         try expect(abs(half.bassAmount / full.bassAmount - 0.5) > 0.01, "bass intensity must be nonlinear")
         try expect(abs(half.crystalizerAmount / full.crystalizerAmount - 0.5) > 0.01, "detail intensity must be nonlinear")
         try expect(full.stereoWidth <= iPhone.maximumStereoWidth, "compiled width must obey the device cap")
         try expect(full.highPassFrequency != headphones.highPassFrequency, "profiles must compile distinct protection filters")
+        try expect(!advancedSpeaker.crystalizerEnabled, "advanced bypass must compile into render state")
+        try expect(advancedSpeaker.stereoWidth <= iPhone.maximumStereoWidth,
+            "device width caps must override advanced authored width")
 
         let root = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)

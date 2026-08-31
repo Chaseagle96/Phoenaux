@@ -54,6 +54,7 @@ jobs:
       - name: Compile model checks
         run: >-
           swiftc -strict-concurrency=complete -warnings-as-errors
+          App/Phoenaux/Models/AdvancedDSPConfiguration.swift
           App/Phoenaux/Models/DeviceProfile.swift
           App/Phoenaux/Models/PhoenauxPreset.swift
           App/Phoenaux/Models/PresetDocument.swift
@@ -86,3 +87,31 @@ jobs:
           -sdk iphonesimulator
           -destination 'generic/platform=iOS Simulator'
           CODE_SIGNING_ALLOWED=NO
+      - name: Build unsigned device app
+        run: >-
+          xcodebuild build
+          -project Phoenaux.xcodeproj
+          -scheme Phoenaux
+          -configuration Release
+          -sdk iphoneos
+          -destination 'generic/platform=iOS'
+          -derivedDataPath "$RUNNER_TEMP/PhoenauxDerivedData"
+          CODE_SIGNING_ALLOWED=NO
+          CODE_SIGNING_REQUIRED=NO
+      - name: Package unsigned IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/PhoenauxDerivedData/Build/Products/Release-iphoneos/Phoenaux.app"
+          test -d "$app"
+          mkdir -p "$RUNNER_TEMP/PhoenauxIPA/Payload"
+          ditto "$app" "$RUNNER_TEMP/PhoenauxIPA/Payload/Phoenaux.app"
+          cd "$RUNNER_TEMP/PhoenauxIPA"
+          /usr/bin/zip -qry "$RUNNER_TEMP/Phoenaux-unsigned.ipa" Payload
+          /usr/bin/unzip -t "$RUNNER_TEMP/Phoenaux-unsigned.ipa"
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Phoenaux-unsigned-ipa
+          path: ${{ runner.temp }}/Phoenaux-unsigned.ipa
+          if-no-files-found: error

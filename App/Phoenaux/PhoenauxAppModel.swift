@@ -42,6 +42,8 @@ final class PhoenauxAppModel {
     private(set) var activeProfile: ResolvedDeviceProfile
     private(set) var userPresets: [PhoenauxPresetDocument] = []
     private(set) var statusMessage: String?
+    private(set) var moduleEnableOverrides: [DSPModuleKind: Bool] = [:]
+    private(set) var advancedParameterOverrides: [AdvancedDSPParameter: Float] = [:]
 
     var isRebornEnabled: Bool {
         didSet {
@@ -52,6 +54,8 @@ final class PhoenauxAppModel {
     private(set) var presetSelection: PhoenauxPresetSelection {
         didSet {
             guard oldValue != presetSelection else { return }
+            moduleEnableOverrides = [:]
+            advancedParameterOverrides = [:]
             defaults.set(presetSelection.persistenceValue, forKey: "preset.selected")
             synchronizeDSP()
         }
@@ -124,6 +128,50 @@ final class PhoenauxAppModel {
         return safeName.isEmpty ? "Phoenaux-Preset" : safeName
     }
 
+    var hasAdvancedOverrides: Bool {
+        !moduleEnableOverrides.isEmpty || !advancedParameterOverrides.isEmpty
+    }
+
+    func moduleEnabled(_ kind: DSPModuleKind) -> Bool {
+        moduleEnableOverrides[kind] ?? activePresetDocument?.module(kind)?.enabled ?? false
+    }
+
+    func setModuleEnabled(_ kind: DSPModuleKind, enabled: Bool) {
+        guard let authored = activePresetDocument?.module(kind)?.enabled else { return }
+        if enabled == authored {
+            moduleEnableOverrides.removeValue(forKey: kind)
+        } else {
+            moduleEnableOverrides[kind] = enabled
+        }
+        synchronizeDSP()
+    }
+
+    func advancedValue(for parameter: AdvancedDSPParameter) -> Float {
+        advancedParameterOverrides[parameter]
+            ?? activePresetDocument?.authoredValue(for: parameter)
+            ?? parameter.defaultValue
+    }
+
+    func setAdvancedValue(_ value: Float, for parameter: AdvancedDSPParameter) {
+        let clamped = parameter.clamped(value)
+        let authored = activePresetDocument?.authoredValue(for: parameter)
+            ?? parameter.defaultValue
+        if clamped == authored {
+            advancedParameterOverrides.removeValue(forKey: parameter)
+        } else {
+            advancedParameterOverrides[parameter] = clamped
+        }
+        synchronizeDSP()
+    }
+
+    func resetAdvancedOverrides() {
+        guard hasAdvancedOverrides else { return }
+        moduleEnableOverrides = [:]
+        advancedParameterOverrides = [:]
+        synchronizeDSP()
+        statusMessage = "Advanced adjustments reset to \(activePresetName)."
+    }
+
     func selectPreset(_ selection: PhoenauxPresetSelection) {
         guard let preset = document(for: selection) else {
             statusMessage = "That saved preset is no longer available."
@@ -186,6 +234,8 @@ final class PhoenauxAppModel {
                     _ = try compile(imported)
                     let selection = PhoenauxPresetSelection.user(imported.identifier)
                     if presetSelection == selection {
+                        moduleEnableOverrides = [:]
+                        advancedParameterOverrides = [:]
                         synchronizeDSP()
                     } else {
                         presetSelection = selection
@@ -201,7 +251,7 @@ final class PhoenauxAppModel {
     }
 
     func exportSelectedPreset() async -> Data? {
-        guard let preset = activePresetDocument else {
+        guard let preset = effectivePresetDocument else {
             statusMessage = "The selected preset is unavailable."
             return nil
         }
@@ -226,7 +276,7 @@ final class PhoenauxAppModel {
     }
 
     func saveCurrentPreset(named proposedName: String? = nil) {
-        guard let base = activePresetDocument else {
+        guard let base = effectivePresetDocument else {
             statusMessage = "The selected preset is unavailable."
             return
         }
@@ -317,7 +367,7 @@ final class PhoenauxAppModel {
     }
 
     private func compileCurrentState() throws -> CompiledDSPState {
-        guard let preset = activePresetDocument else {
+        guard let preset = effectivePresetDocument else {
             throw PresetDocumentError.invalidIdentifier
         }
         return try compile(preset)
@@ -333,6 +383,13 @@ final class PhoenauxAppModel {
 
     private var activePresetDocument: PhoenauxPresetDocument? {
         document(for: presetSelection)
+    }
+
+    private var effectivePresetDocument: PhoenauxPresetDocument? {
+        activePresetDocument?.applyingAdvancedOverrides(
+            moduleEnabled: moduleEnableOverrides,
+            parameters: advancedParameterOverrides
+        )
     }
 
     private func document(for selection: PhoenauxPresetSelection) -> PhoenauxPresetDocument? {

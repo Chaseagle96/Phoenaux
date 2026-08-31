@@ -23,6 +23,7 @@ compiled control state
 - Apple adapters translate `AudioBufferList` data into bounded `AudioBufferView` values and call prepared DSP objects. The hosted engine and headless AUv3 effect both use the same C ABI and C++ graph.
 - Local media decoding and security-scoped URL access occur off the render thread. The decoder fills and seals a portable PCM source before an `AVAudioSourceNode` can read it; playback never reads a file, allocates sample storage, or touches a URL.
 - Editable presets and device profiles remain control-thread models. They are validated and compiled before render activation.
+- Advanced UI edits remain sparse control-thread overlays. They are materialized into the same validated preset document before compilation, saving, or export, so the device profile remains the final safety authority.
 - Experimental routing code belongs under `Experimental/` and must never be linked silently into the App Store target.
 
 ## Render-thread contract

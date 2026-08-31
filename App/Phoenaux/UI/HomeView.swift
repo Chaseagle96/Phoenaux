@@ -8,6 +8,7 @@ struct HomeView: View {
     @State private var isImportingPreset = false
     @State private var isExportingPreset = false
     @State private var presetExportDocument: PresetExportDocument?
+    @State private var isAdvancedExpanded = false
 
     var body: some View {
         NavigationStack {
@@ -20,6 +21,7 @@ struct HomeView: View {
                         sourceCard
                         rebornCard
                         presetCard
+                        advancedCard
                         metersCard
                         playbackButton
                         status
@@ -230,13 +232,14 @@ struct HomeView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 LazyVGrid(columns: [.init(.adaptive(minimum: 92), spacing: 7)], spacing: 7) {
-                    ForEach(
-                        ["Filter", "EQ", "Bass", "Exciter", "Crystalizer", "Stereo", "Limiter"],
-                        id: \.self
-                    ) { module in
-                        Label(module, systemImage: "checkmark.circle.fill")
+                    ForEach(DSPModuleKind.allCases, id: \.self) { module in
+                        Label(
+                            module.displayName,
+                            systemImage: model.moduleEnabled(module)
+                                ? "checkmark.circle.fill" : "circle.slash"
+                        )
                             .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.green)
+                            .foregroundStyle(model.moduleEnabled(module) ? Color.green : Color.secondary)
                     }
                 }
                 .accessibilityElement(children: .combine)
@@ -269,6 +272,83 @@ struct HomeView: View {
                 }
                 .font(.caption.weight(.semibold))
             }
+        }
+    }
+
+    private var advancedCard: some View {
+        PhoenauxCard {
+            DisclosureGroup(isExpanded: $isAdvancedExpanded) {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("Changes apply live and remain constrained by the active device profile. Save a snapshot to keep or share them.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("MODULES")
+                            .font(.caption2.weight(.bold))
+                            .tracking(1.2)
+                            .foregroundStyle(.secondary)
+                        ForEach(DSPModuleKind.allCases, id: \.self) { module in
+                            Toggle(
+                                module.displayName,
+                                isOn: Binding(
+                                    get: { model.moduleEnabled(module) },
+                                    set: { model.setModuleEnabled(module, enabled: $0) }
+                                )
+                            )
+                            .tint(.orange)
+                            .accessibilityHint(module == .limiter
+                                ? "Disabling the limiter removes final output protection"
+                                : "Enables or bypasses the \(module.displayName) stage")
+                        }
+                    }
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("TUNING")
+                            .font(.caption2.weight(.bold))
+                            .tracking(1.2)
+                            .foregroundStyle(.secondary)
+                        ForEach(AdvancedDSPParameter.allCases) { parameter in
+                            AdvancedParameterRow(
+                                parameter: parameter,
+                                value: Binding(
+                                    get: { Double(model.advancedValue(for: parameter)) },
+                                    set: { model.setAdvancedValue(Float($0), for: parameter) }
+                                )
+                            )
+                        }
+                    }
+
+                    if model.hasAdvancedOverrides {
+                        Button("Reset Advanced Changes", systemImage: "arrow.counterclockwise") {
+                            model.resetAdvancedOverrides()
+                        }
+                        .font(.caption.weight(.semibold))
+                        .accessibilityHint("Restores module and tuning values from the selected preset")
+                    }
+                }
+                .padding(.top, 14)
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("ADVANCED DSP")
+                            .font(.caption2.weight(.bold))
+                            .tracking(1.2)
+                        Text(model.hasAdvancedOverrides ? "Custom live adjustments" : "Modules and tuning")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    if model.hasAdvancedOverrides {
+                        Image(systemName: "slider.horizontal.3")
+                            .foregroundStyle(.orange)
+                            .accessibilityLabel("Advanced changes active")
+                    }
+                }
+            }
+            .tint(.primary)
         }
     }
 
@@ -416,6 +496,60 @@ private struct MeterRow: View {
             ProgressView(value: normalized)
                 .tint(normalized > 0.9 ? .orange : .green)
                 .accessibilityLabel("\(title) level")
+        }
+    }
+}
+
+private struct AdvancedParameterRow: View {
+    let parameter: AdvancedDSPParameter
+    @Binding var value: Double
+
+    var body: some View {
+        VStack(spacing: 7) {
+            HStack {
+                Text(parameter.displayName)
+                Spacer()
+                Text(formattedValue)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+            .font(.caption)
+            Slider(
+                value: $value,
+                in: Double(parameter.range.lowerBound)...Double(parameter.range.upperBound),
+                step: Double(parameter.step)
+            )
+            .tint(.orange)
+            .accessibilityLabel(parameter.displayName)
+            .accessibilityValue(formattedValue)
+        }
+    }
+
+    private var formattedValue: String {
+        switch parameter {
+        case .highPassFrequency:
+            "\(Int(value.rounded())) Hz"
+        case .inputGainDB, .outputGainDB, .lowGainDB, .presenceGainDB, .airGainDB,
+             .limiterCeilingDB:
+            "\(String(format: "%.1f", value)) dB"
+        case .bassAmount, .exciterAmount, .crystalizerAmount:
+            "\(Int((value * 100).rounded()))%"
+        case .stereoWidth:
+            "\(String(format: "%.2f", value))×"
+        }
+    }
+}
+
+private extension DSPModuleKind {
+    var displayName: String {
+        switch self {
+        case .filter: "Filter"
+        case .equalizer: "Equalizer"
+        case .bassEnhancer: "Bass Enhancer"
+        case .exciter: "Exciter"
+        case .crystalizer: "Crystalizer"
+        case .stereoTools: "Stereo Tools"
+        case .limiter: "Limiter"
         }
     }
 }

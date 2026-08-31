@@ -41,6 +41,7 @@ The Swift model checks cover:
 - device-profile inheritance and route-specific bass strategies;
 - distinct protective compilation for iPhone speakers and AirPods Pro 3;
 - nonlinear intensity curves and device width caps;
+- advanced bypass/parameter materialization, safe clamping, and retained device caps;
 - complete preset JSON round trips and malformed graph rejection;
 - atomic preset save, reload, export/import round trip, and targeted deletion.
 
@@ -48,6 +49,7 @@ On Linux with Swift 6 installed, compile and run the dependency-free model check
 
 ```sh
 swiftc -strict-concurrency=complete -warnings-as-errors \
+  App/Phoenaux/Models/AdvancedDSPConfiguration.swift \
   App/Phoenaux/Models/DeviceProfile.swift \
   App/Phoenaux/Models/PhoenauxPreset.swift \
   App/Phoenaux/Models/PresetDocument.swift \
@@ -59,7 +61,7 @@ swiftc -strict-concurrency=complete -warnings-as-errors \
 ./build/PhoenauxModelCheck
 ```
 
-The generated Xcode project includes equivalent `PhoenauxTests` XCTest coverage. The macOS CI job downloads pinned XcodeGen 2.46.0 and runs `xcodebuild build-for-testing` against a generic iOS Simulator destination. This validates compilation but does not replace signed-device launch or acoustic testing.
+The generated Xcode project includes equivalent `PhoenauxTests` XCTest coverage. The macOS CI job downloads pinned XcodeGen 2.46.0 and runs `xcodebuild build-for-testing` against a generic iOS Simulator destination. It also compiles a Release build for generic iOS hardware without code signing and uploads `Phoenaux-unsigned.ipa`. The artifact proves device-target compilation and packaging, but it is not installable until signed with an appropriate Apple certificate and provisioning profile; neither this check nor the simulator build replaces signed-device launch or acoustic testing.
 
 Linux CI also type-checks `Tests/LinuxBridgeCheck/BridgeCheck.swift` through the app bridging header. This catches Swift-imported C ABI pointer and integer-shape regressions even though Apple framework sources still require the macOS job.
 

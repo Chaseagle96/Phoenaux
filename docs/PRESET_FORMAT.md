@@ -39,3 +39,5 @@ The serialized preset format is UTF-8 JSON with an explicit schema version. JSON
 - Noncanonical graph order is preserved but rejected by this fixed-graph build rather than being silently ignored.
 
 The built-in catalog contains Reborn, Pure, Impact, Crystal, Wide, Voice, and Night with distinct authored intent. Their values are provisional until loudness-matched device listening tests are complete. Users can save and select validated snapshots, import JSON through a security-scoped document URL, and export the active built-in or saved preset through SwiftUI's document exporter. An imported noncanonical graph is preserved but is not selected or described as applied by this fixed-graph build.
+
+Advanced module and tuning changes are sparse in-memory overlays while the user edits. Saving or exporting materializes them into ordinary module enable states, parameters, and gains in this format. Selecting another preset clears the overlays. Profile protection such as speaker high-pass and maximum-width limits is applied later during compilation and is never serialized as if it were creative preset authorship.
