@@ -61,7 +61,7 @@ final class HostedAudioEngine {
         }
     }
 
-    deinit {
+    isolated deinit {
         meterTask?.cancel()
         if let interruptionObserver {
             NotificationCenter.default.removeObserver(interruptionObserver)
