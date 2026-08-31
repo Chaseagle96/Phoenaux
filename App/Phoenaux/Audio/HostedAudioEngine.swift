@@ -55,8 +55,12 @@ final class HostedAudioEngine {
             object: nil,
             queue: .main
         ) { [weak self] notification in
+            guard let typeValue = notification.userInfo?[AVAudioSessionInterruptionTypeKey]
+                as? UInt else { return }
+            let optionsValue = notification.userInfo?[AVAudioSessionInterruptionOptionKey]
+                as? UInt ?? 0
             Task { @MainActor in
-                self?.handleInterruption(notification)
+                self?.handleInterruption(typeValue: typeValue, optionsValue: optionsValue)
             }
         }
     }
@@ -275,9 +279,8 @@ final class HostedAudioEngine {
         }
     }
 
-    private func handleInterruption(_ notification: Notification) {
-        guard let value = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
-              let type = AVAudioSession.InterruptionType(rawValue: value) else { return }
+    private func handleInterruption(typeValue: UInt, optionsValue: UInt) {
+        guard let type = AVAudioSession.InterruptionType(rawValue: typeValue) else { return }
         if type == .began {
             let wasPlaying = isPlaying
             resumeAfterInterruption = wasPlaying
@@ -286,8 +289,6 @@ final class HostedAudioEngine {
                 lastError = "Playback paused for an audio interruption."
             }
         } else {
-            let optionsValue = notification.userInfo?[AVAudioSessionInterruptionOptionKey]
-                as? UInt ?? 0
             let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
             let shouldResume = resumeAfterInterruption && options.contains(.shouldResume)
             resumeAfterInterruption = false
