@@ -184,15 +184,17 @@ final class PhoenauxAudioUnit: AUAudioUnit {
         let values: [PhoenauxAUParameterAddress: AUValue]
     }
 
-    private static let presetDefinitions: [PresetDefinition] = [
-        preset(0, "Reborn", -4, 2, 1.5, 1, 0.36, 0.18, 0.24, 1.12),
-        preset(1, "Pure", -2, 0.5, 0.5, 0.5, 0.14, 0.08, 0.09, 1.04),
-        preset(2, "Impact", -5, 3.5, 1, 0, 0.54, 0.12, 0.29, 1.08),
-        preset(3, "Crystal", -4, 0.5, 2, 2.5, 0.17, 0.36, 0.54, 1.10),
-        preset(4, "Wide", -3, 1, 0.5, 1, 0.23, 0.16, 0.21, 1.22),
-        preset(5, "Voice", -3, -1, 3, 0.5, 0.08, 0.20, 0.20, 1.02),
-        preset(6, "Night", -5, 2.5, 1.5, -0.5, 0.32, 0.10, 0.15, 1.06),
-    ]
+    private static var presetDefinitions: [PresetDefinition] {
+        [
+            preset(0, "Reborn", -4, 2, 1.5, 1, 0.36, 0.18, 0.24, 1.12),
+            preset(1, "Pure", -2, 0.5, 0.5, 0.5, 0.14, 0.08, 0.09, 1.04),
+            preset(2, "Impact", -5, 3.5, 1, 0, 0.54, 0.12, 0.29, 1.08),
+            preset(3, "Crystal", -4, 0.5, 2, 2.5, 0.17, 0.36, 0.54, 1.10),
+            preset(4, "Wide", -3, 1, 0.5, 1, 0.23, 0.16, 0.21, 1.22),
+            preset(5, "Voice", -3, -1, 3, 0.5, 0.08, 0.20, 0.20, 1.02),
+            preset(6, "Night", -5, 2.5, 1.5, -0.5, 0.32, 0.10, 0.15, 1.06),
+        ]
+    }
 
     private static func preset(
         _ number: Int,
