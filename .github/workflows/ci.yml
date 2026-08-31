@@ -75,8 +75,9 @@ jobs:
           curl --fail --location --retry 3 \
             https://github.com/yonaskolb/XcodeGen/releases/download/2.46.0/xcodegen.zip \
             --output "$RUNNER_TEMP/xcodegen.zip"
-          ditto -x -k "$RUNNER_TEMP/xcodegen.zip" "$RUNNER_TEMP/xcodegen"
+          ditto -x -k "$RUNNER_TEMP/xcodegen.zip" "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/xcodegen/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/xcodegen/bin/xcodegen" --version
       - name: Generate Xcode project
         run: xcodegen generate --spec project.yml
       - name: Compile app and model tests
